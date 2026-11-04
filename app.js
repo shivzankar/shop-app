@@ -1,0 +1,11 @@
+const express = require("express");
+const client = require("prom-client");
+const app = express();
+const VERSION = process.env.APP_VERSION || "v1";
+client.collectDefaultMetrics();
+const requests = new client.Counter({ name: "http_requests_total", help: "Total requests", labelNames: ["path", "status"] });
+app.use((req, res, next) => { res.on("finish", () => requests.inc({ path: req.path, status: res.statusCode })); next(); });
+app.get("/", (req, res) => res.send("Welcome to ShopApp " + VERSION));
+app.get("/health", (req, res) => res.status(200).send("OK"));
+app.get("/metrics", async (req, res) => { res.set("Content-Type", client.register.contentType); res.end(await client.register.metrics()); });
+app.listen(3000, () => console.log("ShopApp " + VERSION + " on port 3000"));
