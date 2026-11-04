@@ -14,9 +14,9 @@ jobs:
 
       - name: Smoke test
         run: |
-          docker run -d -p 3000:3000 --name t shop-app:test
-          sleep 5
-          curl --fail http://localhost:3000/health
+          docker run -d -p 3000:3000 --name smoketest shop-app:test
+          for i in $(seq 1 15); do curl -fs http://localhost:3000/health && exit 0; sleep 2; done
+          docker logs smoketest; exit 1
 
       - uses: docker/login-action@v3
         with:
