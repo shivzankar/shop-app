@@ -1,0 +1,31 @@
+name: CI
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-test-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t shop-app:test .
+
+      - name: Smoke test
+        run: |
+          docker run -d -p 3000:3000 --name t shop-app:test
+          sleep 5
+          curl --fail http://localhost:3000/health
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/shop-app:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/shop-app:latest
